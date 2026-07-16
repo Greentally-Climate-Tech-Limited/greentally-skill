@@ -10,7 +10,9 @@ This skill reproduces the Greentally Direct Upload review flow inside a user's o
 2. It extracts reviewable activity or spend rows.
 3. It queries the organization-visible Greentally factor catalog through MCP.
 4. It matches factors and prepares the standard emission CSV.
-5. It validates the CSV, asks for confirmation, and submits the confirmed rows through MCP.
+5. It validates the CSV and shows the exact result.
+6. It stops and waits for a new explicit user confirmation before any MCP submission.
+7. Only after confirmation, it submits the confirmed rows through MCP.
 
 Original files remain local. The workflow is not limited to the formats accepted by the Greentally web uploader: it can process PDFs, images, spreadsheets, CSV, email, text, and other formats whenever the local agent can read them reliably.
 
@@ -54,6 +56,8 @@ Complete these steps autonomously. Stop only when credentials or user authorizat
 9. Report MCP connection and skill installation status. Mention that a restart or reload may be required before the skill appears.
 
 Never send an original source document to Greentally MCP. The installed skill keeps recognition and extraction in the local agent and sends only factor queries and finalized CSV text.
+
+Never submit emission data proactively. The agent must validate first, display the exact submission summary, and wait for a new explicit confirmation. The user's initial request to process or upload a source is not final submission confirmation.
 
 ### Codex
 

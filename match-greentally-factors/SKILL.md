@@ -7,6 +7,15 @@ description: Read any local file format the agent can reliably understand, extra
 
 Keep the original source local. Perform recognition and extraction with the local agent, use Greentally MCP only for factor catalog queries and final CSV validation/submission, and require review before creating emission records.
 
+## Mandatory Submit Gate
+
+- Never call `submit_emission_import_csv` proactively, autonomously, in the background, or merely because submission appears to be the next logical step.
+- A user's initial request to process, analyze, import, or upload a source is not final submission confirmation.
+- After successful validation, show the exact rows, selected factors, per-row emissions, total emission, and duplicate implications. Ask a focused confirmation question and stop. Wait for a new explicit affirmative response.
+- Silence, timeout, lack of response, general approval of the analysis, or permission granted before the validation summary does not count as confirmation.
+- If any CSV content changes after confirmation, validate again, show the revised summary, and obtain a new confirmation.
+- Set `userConfirmed: true` only after this gate is satisfied. Otherwise never call the submit tool.
+
 ## Preconditions
 
 1. Confirm that the `greentally` MCP server is connected and exposes the factor query plus emission CSV tools.
@@ -31,8 +40,8 @@ Keep the original source local. Perform recognition and extraction with the loca
 7. Resolve every `needs_input` item with the user. Do not include an unresolved row in the CSV.
 8. Generate a local UTF-8 CSV file using the exact contract, normally `greentally-emission-import.csv`. Use deterministic Item IDs so retrying the same source cannot create duplicates. Pass its text content to MCP; do not treat this as an original-file upload.
 9. Call `validate_emission_import_csv`. If `failedRows` is non-empty, correct the CSV and validate again. Do not submit a partially valid CSV.
-10. Show the validated row count, selected factors, per-row server-calculated emissions, and total preview. Obtain explicit user confirmation to create these Greentally emission records.
-11. Call `submit_emission_import_csv` with the byte-for-byte validated CSV content. Treat its calculation and insertion result as authoritative.
+10. Show the validated row count, selected factors, per-row server-calculated emissions, total preview, and duplicate behavior. Ask whether to submit exactly these rows, stop, and wait for the user's new explicit confirmation.
+11. Only after that confirmation, call `submit_emission_import_csv` with the byte-for-byte validated CSV content and `userConfirmed: true`. Treat its calculation and insertion result as authoritative. If confirmation is absent, leave the validated CSV local and do not submit.
 12. Report inserted and duplicate counts, total emission, per-row status, and any MCP error. Never claim success from a local calculation alone.
 
 ## Default Extraction and Matching Rules
@@ -49,10 +58,10 @@ Keep the original source local. Perform recognition and extraction with the loca
 ## Safety and Writes
 
 - Factor catalog writes are separate from emission submission. Call `create_factor_entry`, `update_factor_entry`, or `import_factor_entries_csv` only for an explicit factor-management request, never to force a document match.
-- `submit_emission_import_csv` creates organization emission records. Validate first and obtain confirmation after showing the exact import summary.
+- `submit_emission_import_csv` creates organization emission records. Never invoke it without a new explicit confirmation obtained after showing the exact validation summary.
 - Stable Item IDs provide idempotent retry behavior. If `duplicateCount` is non-zero, report it; do not create new IDs merely to bypass deduplication.
 - Public factors may be read but cannot be modified across organizations.
-- Report stable MCP codes without hiding them: `VALIDATION`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `PAYLOAD_TOO_LARGE`, and `UNAUTHORIZED`.
+- Report stable MCP codes without hiding them: `VALIDATION`, `CONFIRMATION_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `PAYLOAD_TOO_LARGE`, and `UNAUTHORIZED`.
 
 ## Response Format
 

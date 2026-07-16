@@ -95,8 +95,11 @@ Require `failedRows` to be empty before requesting submission confirmation.
 Required input:
 
 - `csvContent`
+- `userConfirmed`: must be `true` only after the user reviewed the exact validation summary and explicitly confirmed submission in a new response
 
-This tool atomically validates and creates emission source records and raw emission data in the current organization. Call validation first, show the exact summary, and obtain explicit confirmation. Submit the same CSV that was validated.
+Never call this tool proactively or automatically. Call validation first, show the exact summary, ask whether to submit it, stop, and wait. An initial instruction to process, analyze, import, or upload a source is not confirmation. Only a new explicit affirmative response after the summary permits `userConfirmed: true`. Submit the same CSV that was validated; if it changed, revalidate and reconfirm.
+
+Without post-validation confirmation, do not call this tool. A false or missing `userConfirmed` is rejected with `CONFIRMATION_REQUIRED`.
 
 Stable Item IDs make retries idempotent. Inspect `submitted`, `insertedCount`, `duplicateCount`, `totalEmission`, `unit`, `rows`, and `failedRows`. A duplicate is not a new insertion.
 

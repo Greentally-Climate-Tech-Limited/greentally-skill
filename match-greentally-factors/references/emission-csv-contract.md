@@ -57,8 +57,10 @@ Quote text containing commas:
 1. Call `validate_emission_import_csv` with the complete CSV text.
 2. Require `failedRows` to be empty and `validRows` to equal `totalRows`.
 3. Compare returned factor IDs, factor values, emissions, and units with the review table.
-4. Show the validation summary and obtain explicit confirmation.
-5. Call `submit_emission_import_csv` with the byte-for-byte validated CSV.
+4. Show the exact validation summary, ask whether to submit those rows, stop, and wait for a new explicit affirmative response. An earlier request to process or upload the source is not confirmation.
+5. Only after that response, call `submit_emission_import_csv` with the byte-for-byte validated CSV and `userConfirmed: true`.
 6. Treat `inserted: false` rows as idempotent duplicates, not failures.
+
+Never call the submit tool proactively. If there is no explicit post-validation confirmation, end with the local validated CSV and no submission. Any CSV change invalidates the confirmation and requires revalidation and reconfirmation.
 
 Never change an Item ID to conceal a duplicate. Use a new Item ID only for a genuinely distinct source item.
