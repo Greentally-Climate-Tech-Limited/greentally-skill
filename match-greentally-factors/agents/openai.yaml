@@ -1,0 +1,4 @@
+interface:
+  display_name: "Greentally Local Emission Import"
+  short_description: "Extract, match, validate, and import emission data"
+  default_prompt: "Use $match-greentally-factors to read this source locally, match Greentally factors, review the result with me, and import the confirmed emission rows."
