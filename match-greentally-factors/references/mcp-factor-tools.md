@@ -78,30 +78,32 @@ Optional input:
 
 Use this to verify the selected factor or to retrieve the complete current state before an update.
 
-## Emission CSV Tools
+## Emission Source Record Tools
 
-### `validate_emission_import_csv`
-
-Required input:
-
-- `csvContent`
-
-This read-only tool validates the exact emission CSV contract, factor visibility, and activity-unit compatibility, then returns server-calculated per-row and total emission previews. It stores nothing. Read [emission-csv-contract.md](emission-csv-contract.md) before calling it.
-
-Require `failedRows` to be empty before requesting submission confirmation.
-
-### `submit_emission_import_csv`
+### `validate_emission_source_records`
 
 Required input:
 
-- `csvContent`
+- `schemaVersion`: exactly `emission-source-submission/v1`
+- `items`: one or more `{sourceRecord, factorId}` objects
+
+This read-only tool validates every `emission-source-record/v1`, factor visibility, and activity-unit or currency compatibility, then returns server-calculated per-row and total emission previews. It stores nothing. Read [emission-source-contract.md](emission-source-contract.md) before calling it.
+
+Require `failedItems` to be empty before requesting submission confirmation.
+
+### `submit_emission_source_records`
+
+Required input:
+
+- `schemaVersion`: exactly `emission-source-submission/v1`
+- `items`: the exact byte-for-byte-equivalent records and factor selections most recently validated
 - `userConfirmed`: must be `true` only after the user reviewed the exact validation summary and explicitly confirmed submission in a new response
 
-Never call this tool proactively or automatically. Call validation first, show the exact summary, ask whether to submit it, stop, and wait. An initial instruction to process, analyze, import, or upload a source is not confirmation. Only a new explicit affirmative response after the summary permits `userConfirmed: true`. Submit the same CSV that was validated; if it changed, revalidate and reconfirm.
+Never call this tool proactively or automatically. Call validation first, show the exact summary, ask whether to submit it, stop, and wait. An initial instruction to process, analyze, import, or upload a source is not confirmation. Only a new explicit affirmative response after the summary permits `userConfirmed: true`. Submit the same source records and factor selections that were validated; if any value changed, revalidate and reconfirm.
 
 Without post-validation confirmation, do not call this tool. A false or missing `userConfirmed` is rejected with `CONFIRMATION_REQUIRED`.
 
-Stable Item IDs make retries idempotent. Inspect `submitted`, `insertedCount`, `duplicateCount`, `totalEmission`, `unit`, `rows`, and `failedRows`. A duplicate is not a new insertion.
+Stable `source.sourceId` and `item.itemId` values make retries idempotent. Each inserted item creates an `emission_source_records` row whose payload is the submitted `sourceRecord`; selected factor data is stored separately. Inspect `submitted`, `insertedCount`, `duplicateCount`, `totalEmission`, `unit`, `items`, and `failedItems`. A duplicate is not a new insertion.
 
 ## Factor Catalog Write Tools
 
@@ -152,7 +154,7 @@ Maximum CSV size is 10 MiB and maximum data rows is 10,000. Inspect `totalRows`,
 - `FORBIDDEN`: stop the attempted write or inaccessible read; explain the organization/role boundary.
 - `NOT_FOUND`: refresh the relevant catalog and verify the ID.
 - `CONFLICT`: search for the existing factor before proposing another create or update.
-- `PAYLOAD_TOO_LARGE`: reduce CSV size or row count without silently dropping data.
+- `PAYLOAD_TOO_LARGE`: reduce submission size or row count without silently dropping data.
 - `UNAUTHORIZED`: ask the user to replace or reconfigure the API key.
 
 Do not turn a permission or visibility error into a broader search outside MCP.

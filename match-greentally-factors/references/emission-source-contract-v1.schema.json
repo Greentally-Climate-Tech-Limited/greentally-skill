@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greentally.ai/schemas/emission-source-contract-v1.schema.json",
+  "title": "Greentally Emission Source Analysis v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "records", "warnings", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "emission-source-analysis/v1" },
+    "records": { "type": "array", "items": { "$ref": "#/$defs/analysisRecord" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "summary": { "type": "string" }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "sourceName", "documentType"],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "sourceName": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "documentType": { "type": "string", "enum": ["electricity_utility_bill", "gas_fuel_bill", "water_utility_bill", "waste_disposal_document", "business_travel_document", "purchase_invoice", "material_invoice", "service_invoice", "spreadsheet", "other"] },
+        "documentNumber": { "type": "string" },
+        "documentDate": { "type": "string", "format": "date" },
+        "supplier": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "meterNumber": { "type": "string" },
+        "country": { "type": "string" },
+        "regionCode": { "type": "string", "pattern": "^(?:[A-Z]{3}|GLOBAL)$" },
+        "location": { "type": "string" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "netAmount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "grossAmount": { "type": "number" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itemId", "name", "calculationType", "startDate", "endDate"],
+      "properties": {
+        "itemId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "name": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string" },
+        "productCode": { "type": "string" },
+        "calculationType": { "type": "string", "enum": ["activity", "spend"] },
+        "activityValue": { "type": "number", "exclusiveMinimum": 0 },
+        "activityUnit": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "spendValue": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "quantityValue": { "type": "number" },
+        "quantityUnit": { "type": "string" },
+        "unitPrice": { "type": "number" },
+        "country": { "type": "string" },
+        "regionCode": { "type": "string", "pattern": "^(?:[A-Z]{3}|GLOBAL)$" },
+        "location": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" }
+      },
+      "allOf": [
+        { "if": { "properties": { "calculationType": { "const": "activity" } } }, "then": { "required": ["activityValue", "activityUnit"] } },
+        { "if": { "properties": { "calculationType": { "const": "spend" } } }, "then": { "required": ["spendValue", "currency"] } }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "quote"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "quote": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "reference": { "type": "string" }
+      }
+    },
+    "sourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "source", "item", "evidence", "remarks"],
+      "properties": {
+        "schemaVersion": { "const": "emission-source-record/v1" },
+        "source": { "$ref": "#/$defs/source" },
+        "item": { "$ref": "#/$defs/item" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "remarks": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "categoryCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "confidence", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "name": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "reason": { "type": "string" }
+      }
+    },
+    "matchingHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activityName", "categoryCandidates", "fallbackRegionCodes", "factorKeywords"],
+      "properties": {
+        "activityName": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "categoryCandidates": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/categoryCandidate" } },
+        "fallbackRegionCodes": { "type": "array", "maxItems": 3, "items": { "type": "string", "pattern": "^(?:[A-Z]{3}|GLOBAL)$" } },
+        "factorKeywords": { "type": "array", "maxItems": 8, "items": { "type": "string", "minLength": 1, "pattern": "\\S" } },
+        "releaseYear": { "type": "integer", "minimum": 1900, "maximum": 2200 }
+      }
+    },
+    "analysisRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRecord", "matchingHints"],
+      "properties": {
+        "sourceRecord": { "$ref": "#/$defs/sourceRecord" },
+        "matchingHints": { "$ref": "#/$defs/matchingHints" }
+      }
+    },
+    "submissionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRecord", "factorId"],
+      "properties": {
+        "sourceRecord": { "$ref": "#/$defs/sourceRecord" },
+        "factorId": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      }
+    },
+    "submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "items"],
+      "properties": {
+        "schemaVersion": { "const": "emission-source-submission/v1" },
+        "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/submissionItem" } }
+      }
+    }
+  }
+}

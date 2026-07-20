@@ -9,8 +9,8 @@ This skill reproduces the Greentally Direct Upload review flow inside a user's o
 1. The local agent reads and recognizes the source.
 2. It extracts reviewable activity or spend rows.
 3. It queries the organization-visible Greentally factor catalog through MCP.
-4. It matches factors and prepares the standard emission CSV.
-5. It validates the CSV and shows the exact result.
+4. It serializes the standard source-record JSON and matches factors.
+5. It validates the source-record submission and shows the exact result.
 6. It stops and waits for a new explicit user confirmation before any MCP submission.
 7. Only after confirmation, it submits the confirmed rows through MCP.
 
@@ -49,13 +49,13 @@ Complete these steps autonomously. Stop only when credentials or user authorizat
    - `create_factor_entry`
    - `update_factor_entry`
    - `import_factor_entries_csv`
-   - `validate_emission_import_csv`
-   - `submit_emission_import_csv`
+   - `validate_emission_source_records`
+   - `submit_emission_source_records`
 7. Install or update the `match-greentally-factors` directory using the instructions below.
-8. Verify that `SKILL.md`, `agents/openai.yaml`, and the three reference files are present.
+8. Verify that `SKILL.md`, `agents/openai.yaml`, and all reference files, including `emission-source-contract-v1.schema.json`, are present.
 9. Report MCP connection and skill installation status. Mention that a restart or reload may be required before the skill appears.
 
-Never send an original source document to Greentally MCP. The installed skill keeps recognition and extraction in the local agent and sends only factor queries and finalized CSV text.
+Never send an original source document to Greentally MCP. The installed skill keeps recognition and extraction in the local agent and sends only factor queries and finalized source-record JSON.
 
 Never submit emission data proactively. The agent must validate first, display the exact submission summary, and wait for a new explicit confirmation. The user's initial request to process or upload a source is not final submission confirmation.
 

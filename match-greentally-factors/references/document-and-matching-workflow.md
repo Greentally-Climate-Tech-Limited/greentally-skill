@@ -7,9 +7,10 @@
 3. Field extraction
 4. Item validity and deduplication
 5. Normalization
-6. Catalog-bounded matching
-7. Candidate ranking
-8. Final validation
+6. Canonical analysis JSON
+7. Catalog-bounded matching
+8. Candidate ranking
+9. Final validation
 
 ## 1. Recognition
 
@@ -65,7 +66,6 @@ For every emissions item, extract:
 - physical `amount` and `unit`, or trustworthy `spendValue`/`lineTotal` and ISO currency;
 - row-specific quantity, quantity unit, dimensions, or unit price when useful;
 - original and normalized geography;
-- one to three catalog category candidates;
 - up to eight semantic factor keywords;
 - concise evidence.
 
@@ -92,7 +92,7 @@ Exclude supplier/customer names, invoice numbers, account numbers, bare SKUs, cu
 
 Remove VAT, sales tax, discounts, deposits, payments, balances, amount due, subtotals, totals, rounding, credits, standing charges, availability/MIC charges, reactive power charges, and levies unless the line itself is an independently purchased emissions-relevant service.
 
-When an activity item has compatible candidates and a spend item represents the same consumption charge, keep the activity item and remove the duplicate spend item.
+When trustworthy physical activity and a spend line represent the same underlying consumption charge, keep the activity item and remove the duplicate spend item before factor matching.
 
 ## 5. Normalization
 
@@ -115,16 +115,24 @@ Normalize currency symbols and names to ISO codes when unambiguous, for example 
 
 Normalize country evidence to ISO-3166 alpha-3 codes. Keep `GLOBAL` as a catalog geography, not as an inferred document country. Derive source year from the activity period end, start, or invoice date in that order.
 
-## 6. Catalog-Bounded Matching
+## 6. Canonical Analysis JSON
+
+Before serializing, call `list_factor_categories` and choose one to three `matchingHints.categoryCandidates` only from the returned exact IDs and names. Catalog discovery is context building, not factor-entry matching. Do not generate an ID from a category name.
+
+Serialize the validated, deduplicated, normalized source facts and catalog-bounded matching hints as `emission-source-analysis/v1` before searching or selecting factor entries. Read [emission-source-contract.md](emission-source-contract.md) and validate the artifact against the root of [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json).
+
+Keep source facts in each `sourceRecord` and catalog-search guidance in its sibling `matchingHints`. Use the exact lower-camel-case property names. Do not emit a free-form alternative object, CSV row, selected factor, or calculation snapshot at this stage.
+
+## 7. Catalog-Bounded Matching
 
 ### Build context
 
-1. Call `list_factor_categories` and retain exact IDs and names.
-2. Call `list_factor_libraries`.
+1. Reuse the exact category IDs and names already recorded in the analysis artifact.
+2. Call `list_factor_libraries` if they were not loaded while building the analysis context.
 3. Call `list_factor_releases` for relevant libraries with `publishedOnly: true`.
 4. Select release candidates by region and year before searching entries.
 
-Choose one to three category candidates from the returned category catalog. Do not generate an ID from a category name.
+If a later no-match expansion changes the category candidates, update `matchingHints.categoryCandidates` with exact catalog values and revalidate the analysis artifact before continuing.
 
 ### Search stages
 
@@ -140,7 +148,7 @@ Use `list_factor_entries` with `categoryId`, `regionCode`, `scope` only when kno
 
 The MCP entry search does not enforce `activityUnit`. Post-filter every activity candidate and reject entries whose normalized `activityUnit` differs from the extracted activity unit. For spend items, match the ISO currency to `activityUnit`.
 
-## 7. Candidate Ranking
+## 8. Candidate Ranking
 
 Keep at most three unique candidates per item. Rank with these priorities:
 
@@ -160,7 +168,7 @@ Assign confidence:
 
 Never label a match high confidence when the source year is unavailable.
 
-## 8. Final Validation
+## 9. Final Validation
 
 For each candidate:
 
