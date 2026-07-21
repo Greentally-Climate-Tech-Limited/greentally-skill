@@ -80,6 +80,12 @@ Use this to verify the selected factor or to retrieve the complete current state
 
 ## Emission Source Record Tools
 
+### `canonicalize_emission_source_observations`
+
+Required input is one strict `document-observation/v1` object. Send only bounded source and item facts; never send file bytes, base64, or full OCR text.
+
+The read-only result contains `status`, strict `analysis`, and `diagnostics`. `needs_input` is a normal semantic result, not a transport failure. Resolve the named fields with the user and call canonicalization again. Do not independently invent `calculationType`, copy a document total to multiple lines, or construct a looser analysis object.
+
 ### `validate_emission_source_records`
 
 Required input:

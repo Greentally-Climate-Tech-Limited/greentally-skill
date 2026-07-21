@@ -6,8 +6,8 @@
 2. Extraction routing
 3. Field extraction
 4. Item validity and deduplication
-5. Normalization
-6. Canonical analysis JSON
+5. Observation normalization
+6. Deterministic canonicalization
 7. Catalog-bounded matching
 8. Candidate ranking
 9. Final validation
@@ -60,8 +60,7 @@ Preserve exact source evidence. Extract document-level fields when present:
 
 For every emissions item, extract:
 
-- stable local item label and a non-empty suggested name;
-- `calculationType`: `activity` or `spend`;
+- stable local item label and a suggested name when evidenced;
 - semantic `activityName` kept separate from the display name;
 - physical `amount` and `unit`, or trustworthy `spendValue`/`lineTotal` and ISO currency;
 - row-specific quantity, quantity unit, dimensions, or unit price when useful;
@@ -94,7 +93,7 @@ Remove VAT, sales tax, discounts, deposits, payments, balances, amount due, subt
 
 When trustworthy physical activity and a spend line represent the same underlying consumption charge, keep the activity item and remove the duplicate spend item before factor matching.
 
-## 5. Normalization
+## 5. Observation Normalization
 
 Normalize physical units conservatively:
 
@@ -115,13 +114,13 @@ Normalize currency symbols and names to ISO codes when unambiguous, for example 
 
 Normalize country evidence to ISO-3166 alpha-3 codes. Keep `GLOBAL` as a catalog geography, not as an inferred document country. Derive source year from the activity period end, start, or invoice date in that order.
 
-## 6. Canonical Analysis JSON
+## 6. Deterministic Canonicalization
 
-Before serializing, call `list_factor_categories` and choose one to three `matchingHints.categoryCandidates` only from the returned exact IDs and names. Catalog discovery is context building, not factor-entry matching. Do not generate an ID from a category name.
+Serialize bounded facts as `document-observation/v1` using [document-observation-v1.schema.json](document-observation-v1.schema.json). This contract intentionally has no `calculationType`; missing business facts remain missing and must not be guessed. Keep the original file, base64, and full OCR text local.
 
-Serialize the validated, deduplicated, normalized source facts and catalog-bounded matching hints as `emission-source-analysis/v1` before searching or selecting factor entries. Read [emission-source-contract.md](emission-source-contract.md) and validate the artifact against the root of [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json).
+Call `canonicalize_emission_source_observations`. Greentally deterministically prefers complete physical activity facts, otherwise uses complete item spend facts, and may inherit a document net amount only when there is exactly one item. It never copies a document total across multiple items. Dates and currency are inherited only by fixed rules.
 
-Keep source facts in each `sourceRecord` and catalog-search guidance in its sibling `matchingHints`. Use the exact lower-camel-case property names. Do not emit a free-form alternative object, CSV row, selected factor, or calculation snapshot at this stage.
+Use the returned `analysis` as the only `emission-source-analysis/v1` artifact. `completed` means all emitted records satisfy the strict contract. `needs_input` includes stable diagnostics describing missing or invalid facts; resolve those facts and call the tool again. Never manually patch around a diagnostic or relax [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json).
 
 ## 7. Catalog-Bounded Matching
 

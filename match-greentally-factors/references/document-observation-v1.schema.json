@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greentally.ai/schemas/document-observation-v1.schema.json",
+  "title": "Greentally Document Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "items", "warnings", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "document-observation/v1" },
+    "source": { "$ref": "#/$defs/source" },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "summary": { "type": "string" }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "sourceName"],
+      "properties": {
+        "sourceId": { "type": "string" },
+        "sourceName": { "type": "string" },
+        "documentType": { "type": "string" },
+        "documentNumber": { "type": "string" },
+        "documentDate": { "type": "string" },
+        "supplier": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "meterNumber": { "type": "string" },
+        "country": { "type": "string" },
+        "regionCode": { "type": "string" },
+        "location": { "type": "string" },
+        "currency": { "type": "string" },
+        "netAmount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "grossAmount": { "type": "number" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "quote"],
+      "properties": {
+        "field": { "type": "string" },
+        "quote": { "type": "string" },
+        "reference": { "type": "string" }
+      }
+    },
+    "categoryCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "confidence", "reason"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "confidence": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "matchingHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activityName", "categoryCandidates", "fallbackRegionCodes", "factorKeywords"],
+      "properties": {
+        "activityName": { "type": "string" },
+        "categoryCandidates": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/categoryCandidate" } },
+        "fallbackRegionCodes": { "type": "array", "maxItems": 3, "items": { "type": "string" } },
+        "factorKeywords": { "type": "array", "maxItems": 8, "items": { "type": "string" } },
+        "releaseYear": { "type": "integer" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itemId", "evidence", "remarks", "matchingHints"],
+      "properties": {
+        "itemId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "productCode": { "type": "string" },
+        "activityValue": { "type": "number" },
+        "activityUnit": { "type": "string" },
+        "spendValue": { "type": "number" },
+        "currency": { "type": "string" },
+        "quantityValue": { "type": "number" },
+        "quantityUnit": { "type": "string" },
+        "unitPrice": { "type": "number" },
+        "country": { "type": "string" },
+        "regionCode": { "type": "string" },
+        "location": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "remarks": { "type": "array", "items": { "type": "string" } },
+        "matchingHints": { "$ref": "#/$defs/matchingHints" }
+      }
+    }
+  }
+}

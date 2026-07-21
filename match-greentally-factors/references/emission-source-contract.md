@@ -2,9 +2,47 @@
 
 ## Purpose
 
-Represent every locally extracted bill, invoice, utility, travel, waste, or spreadsheet item with the same versioned JSON used by Greentally's internal Factor Agent. The machine-readable authority is [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json). Its root validates `emission-source-analysis/v1`; its `#/$defs/submission` subschema validates `emission-source-submission/v1`.
+Represent every locally extracted bill, invoice, utility, travel, waste, or spreadsheet item with the same two-stage contract used by Greentally's internal Factor Agent. [document-observation-v1.schema.json](document-observation-v1.schema.json) validates extracted facts. Greentally's canonicalizer produces the strict [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json); its root validates `emission-source-analysis/v1` and its `#/$defs/submission` subschema validates `emission-source-submission/v1`.
 
 The original source remains local. Submit only the bounded source facts needed for review, audit, and calculation. Do not include full OCR text, file bytes, base64, factor candidates, or factor snapshots in `sourceRecord`.
+
+## Observation Artifact
+
+Create `document-observation/v1` first. It contains one document-level `source` plus observed `items`. Omit unknown optional fields; never use `null`, placeholders, or invented values. It deliberately does not contain `calculationType`.
+
+```json
+{
+  "schemaVersion": "document-observation/v1",
+  "source": {
+    "sourceId": "9ca1f0c2",
+    "sourceName": "electricity-invoice-2026-01.pdf",
+    "documentType": "electricity_utility_bill",
+    "documentDate": "2026-02-02",
+    "currency": "EUR",
+    "netAmount": 318.2
+  },
+  "items": [{
+    "itemId": "winter-day",
+    "name": "Winter day electricity consumption",
+    "activityValue": 1250.4,
+    "activityUnit": "kWh",
+    "startDate": "2026-01-01",
+    "endDate": "2026-01-31",
+    "evidence": [{"field": "item.activityValue", "quote": "Winter day 1,250.4 kWh"}],
+    "remarks": [],
+    "matchingHints": {
+      "activityName": "grid electricity consumption",
+      "categoryCandidates": [],
+      "fallbackRegionCodes": [],
+      "factorKeywords": ["electricity", "grid", "consumption"]
+    }
+  }],
+  "warnings": [],
+  "summary": "One electricity item was observed."
+}
+```
+
+Call `canonicalize_emission_source_observations` with this object. Use its returned `analysis` unchanged as the strict artifact. A `needs_input` status is expected when business facts are incomplete; resolve its diagnostics and canonicalize again instead of patching the final contract manually.
 
 ## Analysis Artifact
 
