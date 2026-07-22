@@ -82,18 +82,18 @@ Use this to verify the selected factor or to retrieve the complete current state
 
 ### `canonicalize_emission_source_observations`
 
-Required input is one strict `document-observation/v1` object. Send only bounded source and item facts; never send file bytes, base64, or full OCR text.
+Required input is one strict `document-observation/v2` object. Send only bounded source and item facts; never send file bytes, base64, or full OCR text.
 
-The read-only result contains `status`, strict `analysis`, and `diagnostics`. `needs_input` is a normal semantic result, not a transport failure. Resolve the named fields with the user and call canonicalization again. Do not independently invent `calculationType`, copy a document total to multiple lines, or construct a looser analysis object.
+The read-only result contains `status`, strict `analysis`, and `diagnostics`. `needs_input` is a normal semantic result, not a transport failure. Resolve the named fields with the user and call canonicalization again. Do not independently invent `input`, use `additionalInfo.quantity` as activity, copy a document total to multiple lines, or construct a looser analysis object.
 
 ### `validate_emission_source_records`
 
 Required input:
 
-- `schemaVersion`: exactly `emission-source-submission/v1`
+- `schemaVersion`: exactly `emission-source-submission/v2`
 - `items`: one or more `{sourceRecord, factorId}` objects
 
-This read-only tool validates every `emission-source-record/v1`, factor visibility, and activity-unit or currency compatibility, then returns server-calculated per-row and total emission previews. It stores nothing. Read [emission-source-contract.md](emission-source-contract.md) before calling it.
+This read-only tool validates every `emission-source-record/v2`, factor visibility, and activity-unit or currency compatibility, then returns server-calculated per-row and total emission previews. It stores nothing. Read [emission-source-contract.md](emission-source-contract.md) before calling it.
 
 Require `failedItems` to be empty before requesting submission confirmation.
 
@@ -101,7 +101,7 @@ Require `failedItems` to be empty before requesting submission confirmation.
 
 Required input:
 
-- `schemaVersion`: exactly `emission-source-submission/v1`
+- `schemaVersion`: exactly `emission-source-submission/v2`
 - `items`: the exact byte-for-byte-equivalent records and factor selections most recently validated
 - `userConfirmed`: must be `true` only after the user reviewed the exact validation summary and explicitly confirmed submission in a new response
 

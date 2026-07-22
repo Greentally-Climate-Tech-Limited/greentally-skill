@@ -62,7 +62,7 @@ For every emissions item, extract:
 
 - stable local item label and a suggested name when evidenced;
 - semantic `activityName` kept separate from the display name;
-- physical `amount` and `unit`, or trustworthy `spendValue`/`lineTotal` and ISO currency;
+- `item.activity.value` and `item.activity.unit`, or trustworthy `item.spend.value` and ISO currency;
 - row-specific quantity, quantity unit, dimensions, or unit price when useful;
 - original and normalized geography;
 - up to eight semantic factor keywords;
@@ -116,11 +116,11 @@ Normalize country evidence to ISO-3166 alpha-3 codes. Keep `GLOBAL` as a catalog
 
 ## 6. Deterministic Canonicalization
 
-Serialize bounded facts as `document-observation/v1` using [document-observation-v1.schema.json](document-observation-v1.schema.json). This contract intentionally has no `calculationType`; missing business facts remain missing and must not be guessed. Keep the original file, base64, and full OCR text local.
+Serialize bounded facts as `document-observation/v2` using [document-observation-v2.schema.json](document-observation-v2.schema.json). This contract separates stable `documentCategory`, open `documentType`, calculation-driving activity/spend, and low-priority `additionalInfo`; missing business facts remain missing and must not be guessed. Keep the original file, base64, and full OCR text local.
 
-Call `canonicalize_emission_source_observations`. Greentally deterministically prefers complete physical activity facts, otherwise uses complete item spend facts, and may inherit a document net amount only when there is exactly one item. It never copies a document total across multiple items. Dates and currency are inherited only by fixed rules.
+Call `canonicalize_emission_source_observations`. Greentally deterministically prefers complete physical activity facts and otherwise uses complete item spend facts. It never promotes `additionalInfo.quantity` or `additionalInfo.totals` into calculation input and never copies a document total across items. A local agent may explicitly observe one invoice-level spend item when the whole-document net total genuinely prices that single purchase; encode that as `item.spend` before canonicalization. Dates are completed only by fixed rules.
 
-Use the returned `analysis` as the only `emission-source-analysis/v1` artifact. `completed` means all emitted records satisfy the strict contract. `needs_input` includes stable diagnostics describing missing or invalid facts; resolve those facts and call the tool again. Never manually patch around a diagnostic or relax [emission-source-contract-v1.schema.json](emission-source-contract-v1.schema.json).
+Use the returned `analysis` as the only `emission-source-analysis/v2` artifact. `completed` means all emitted records satisfy the strict contract. `needs_input` includes stable diagnostics describing missing or invalid facts; resolve those facts and call the tool again. Never manually patch around a diagnostic or relax [emission-source-contract-v2.schema.json](emission-source-contract-v2.schema.json).
 
 ## 7. Catalog-Bounded Matching
 
