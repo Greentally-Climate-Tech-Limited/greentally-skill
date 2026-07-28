@@ -72,10 +72,12 @@ install and use the CLI independently.
    existing production release process. The same published-release event deploys production and
    runs `Release Greentally CLI`, which builds the six platform archives from that exact tag and
    attaches them to the existing Release.
-2. After `Release Greentally CLI` succeeds, manually run `Sync Greentally CLI Release` in this
-   repository. It reads the latest
-   `greentally-core-service` Release, verifies every archive against `checksums.txt`, and publishes
-   the same tag and assets here as the latest Release.
+2. After `Release Greentally CLI` succeeds, push the `v<major>.<minor>.<patch>` tag for the Skill
+   version being published to this repository. `Sync Greentally CLI Release` runs automatically,
+   reads the latest `greentally-core-service` Release, verifies every archive against
+   `checksums.txt`, records the independent CLI version in `cli-version.txt`, and publishes the
+   existing Skill tag and mirrored assets as the latest Release. Manual dispatch remains available
+   to process an existing Skill tag after a failed or previously missed tag event.
 
 Configure `CORE_SERVICE_RELEASE_READ_TOKEN` as an Actions secret in this repository. Use a
 fine-grained token restricted to `greentally-core-service` with only `Contents: Read-only`.

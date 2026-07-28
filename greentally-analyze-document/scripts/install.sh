@@ -8,6 +8,14 @@ print_cli() {
     printf '%s\n' "$1"
 }
 
+verify_cli_version() {
+    reported_version=$("$1" version)
+    if [ "$reported_version" != "$2" ]; then
+        printf '%s\n' "Downloaded Greentally CLI reports version $reported_version, expected $2." >&2
+        exit 1
+    fi
+}
+
 if [ -n "${GREENTALLY_CLI_PATH:-}" ]; then
     if [ ! -f "$GREENTALLY_CLI_PATH" ] || [ ! -x "$GREENTALLY_CLI_PATH" ]; then
         printf '%s\n' "GREENTALLY_CLI_PATH is not an executable file." >&2
@@ -70,27 +78,33 @@ curl -fsSL --retry 3 \
     -o "$release_json"
 
 tag=$(sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$release_json" | head -n 1)
-version=${tag#v}
-if [ -z "$tag" ] || [ -z "$version" ]; then
-    printf '%s\n' "Could not determine the latest Greentally CLI version." >&2
+if [ -z "$tag" ]; then
+    printf '%s\n' "Could not determine the latest Greentally Skill release." >&2
+    exit 1
+fi
+
+release_base="https://github.com/$repository/releases/download/$tag"
+curl -fsSL --retry 3 "$release_base/cli-version.txt" -o "$temporary_dir/cli-version.txt"
+version=$(tr -d '\r\n' < "$temporary_dir/cli-version.txt")
+if ! printf '%s\n' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$'; then
+    printf '%s\n' "The latest Greentally Skill release has an invalid CLI version." >&2
     exit 1
 fi
 
 archive="greentally_${version}_${platform}_${architecture}.tar.gz"
-release_base="https://github.com/$repository/releases/download/$tag"
 curl -fsSL --retry 3 "$release_base/$archive" -o "$temporary_dir/$archive"
 curl -fsSL --retry 3 "$release_base/checksums.txt" -o "$temporary_dir/checksums.txt"
 
-expected=$(awk -v file="$archive" '$2 == file { print $1; exit }' "$temporary_dir/checksums.txt")
+expected=$(awk -v file="$archive" '$2 == file { print $1; exit }' "$temporary_dir/checksums.txt" | tr '[:upper:]' '[:lower:]')
 if [ -z "$expected" ]; then
     printf '%s\n' "No checksum found for $archive." >&2
     exit 1
 fi
 
 if command -v sha256sum >/dev/null 2>&1; then
-    actual=$(sha256sum "$temporary_dir/$archive" | awk '{print $1}')
+    actual=$(sha256sum "$temporary_dir/$archive" | awk '{print $1}' | tr '[:upper:]' '[:lower:]')
 elif command -v shasum >/dev/null 2>&1; then
-    actual=$(shasum -a 256 "$temporary_dir/$archive" | awk '{print $1}')
+    actual=$(shasum -a 256 "$temporary_dir/$archive" | awk '{print $1}' | tr '[:upper:]' '[:lower:]')
 else
     printf '%s\n' "sha256sum or shasum is required to verify Greentally CLI." >&2
     exit 1
@@ -110,5 +124,6 @@ fi
 
 mkdir -p "$(dirname "$cli_path")"
 chmod 0755 "$temporary_dir/extracted/greentally"
+verify_cli_version "$temporary_dir/extracted/greentally" "$version"
 mv "$temporary_dir/extracted/greentally" "$cli_path"
-print_cli "$cli_path"
+printf '%s\n' "$cli_path"

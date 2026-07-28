@@ -1,7 +1,15 @@
 name: Sync Greentally CLI Release
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      skill_tag:
+        description: Existing Skill tag to publish, for example v0.0.1
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,28 +21,51 @@ jobs:
       - name: Resolve latest core-service release
         id: release
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TAG: ${{ github.ref_name }}
           GH_TOKEN: ${{ secrets.CORE_SERVICE_RELEASE_READ_TOKEN }}
+          INPUT_SKILL_TAG: ${{ inputs.skill_tag }}
           SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
         run: |
-          tag=$(gh api "repos/$SOURCE_REPOSITORY/releases/latest" --jq '.tag_name')
-          if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$ ]]; then
-            echo "latest core-service release has an invalid tag: $tag" >&2
+          set -euo pipefail
+          if ! gh api "repos/$SOURCE_REPOSITORY" --jq '.full_name' >/dev/null; then
+            echo "CORE_SERVICE_RELEASE_READ_TOKEN cannot read $SOURCE_REPOSITORY" >&2
+            echo "Check repository selection, Contents: Read-only, organization approval, and SSO authorization." >&2
             exit 1
           fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Refuse to overwrite an existing Skill release
+          if ! cli_tag="$(gh api "repos/$SOURCE_REPOSITORY/releases/latest" --jq '.tag_name')"; then
+            echo "$SOURCE_REPOSITORY has no published non-prerelease GitHub Release." >&2
+            echo "A Git tag by itself is not a GitHub Release." >&2
+            exit 1
+          fi
+          if [[ ! "$cli_tag" =~ ^v(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "latest core-service release has an invalid tag: $cli_tag" >&2
+            exit 1
+          fi
+
+          skill_tag="$INPUT_SKILL_TAG"
+          if [ "$EVENT_NAME" = push ]; then
+            skill_tag="$EVENT_TAG"
+          fi
+          if [[ ! "$skill_tag" =~ ^v(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skill tag must be a stable SemVer with a v prefix: $skill_tag" >&2
+            exit 1
+          fi
+
+          echo "cli_tag=$cli_tag" >> "$GITHUB_OUTPUT"
+          echo "cli_version=${cli_tag#v}" >> "$GITHUB_OUTPUT"
+          echo "skill_tag=$skill_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Validate existing Skill tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ steps.release.outputs.skill_tag }}
         run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "release $TAG already exists and will not be overwritten" >&2
-            exit 1
-          fi
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
-            echo "tag $TAG already exists and will not be reused" >&2
             exit 1
           fi
 
@@ -42,14 +73,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CORE_SERVICE_RELEASE_READ_TOKEN }}
           SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ steps.release.outputs.cli_tag }}
         run: |
           mkdir -p release
           gh release download "$TAG" --repo "$SOURCE_REPOSITORY" --dir release
 
       - name: Verify release assets
         env:
-          VERSION: ${{ steps.release.outputs.version }}
+          VERSION: ${{ steps.release.outputs.cli_version }}
         run: |
           expected=(
             "greentally_${VERSION}_linux_amd64.tar.gz"
@@ -73,14 +104,21 @@ jobs:
           cd release
           sha256sum --check checksums.txt
 
+      - name: Record mirrored CLI version
+        env:
+          VERSION: ${{ steps.release.outputs.cli_version }}
+        run: printf '%s\n' "$VERSION" > release/cli-version.txt
+
       - name: Publish Skill latest release
         env:
+          CLI_TAG: ${{ steps.release.outputs.cli_tag }}
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
+          SKILL_TAG: ${{ steps.release.outputs.skill_tag }}
           SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
         run: |
-          gh release create "$TAG" release/* \
+          gh release create "$SKILL_TAG" release/* \
             --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG" \
-            --notes "Greentally CLI binaries synchronized from $SOURCE_REPOSITORY release $TAG." \
+            --verify-tag \
+            --title "$SKILL_TAG" \
+            --notes "Greentally CLI binaries synchronized from $SOURCE_REPOSITORY release $CLI_TAG." \
             --latest

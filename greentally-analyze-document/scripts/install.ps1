@@ -3,9 +3,18 @@ $ErrorActionPreference = "Stop"
 $repository = "Greentally-Climate-Tech-Limited/greentally-skill"
 
 function Confirm-GreentallyCli {
-    param([Parameter(Mandatory = $true)][string]$Path)
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [string]$ExpectedVersion
+    )
 
-    & $Path version | Out-Null
+    $reportedVersion = (& $Path version | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Greentally CLI version check failed with exit code $LASTEXITCODE."
+    }
+    if ($ExpectedVersion -and $reportedVersion -ne $ExpectedVersion) {
+        throw "Downloaded Greentally CLI reports version $reportedVersion, expected $ExpectedVersion."
+    }
     Write-Output $Path
 }
 
@@ -51,13 +60,19 @@ try {
         -Headers $headers `
         -Uri "https://api.github.com/repos/$repository/releases/latest"
     $tag = [string]$release.tag_name
-    $version = $tag.TrimStart("v")
-    if (-not $tag -or -not $version) {
-        throw "Could not determine the latest Greentally CLI version."
+    if (-not $tag) {
+        throw "Could not determine the latest Greentally Skill release."
+    }
+
+    $releaseBase = "https://github.com/$repository/releases/download/$tag"
+    $versionPath = Join-Path $temporaryDir "cli-version.txt"
+    Invoke-WebRequest -Uri "$releaseBase/cli-version.txt" -OutFile $versionPath
+    $version = (Get-Content -LiteralPath $versionPath -Raw).Trim()
+    if ($version -notmatch "^(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$") {
+        throw "The latest Greentally Skill release has an invalid CLI version."
     }
 
     $archive = "greentally_${version}_windows_${architecture}.zip"
-    $releaseBase = "https://github.com/$repository/releases/download/$tag"
     $archivePath = Join-Path $temporaryDir $archive
     $checksumsPath = Join-Path $temporaryDir "checksums.txt"
 
@@ -84,8 +99,9 @@ try {
     }
 
     New-Item -ItemType Directory -Path (Split-Path -Parent $cliPath) -Force | Out-Null
+    Confirm-GreentallyCli -Path $executable -ExpectedVersion $version | Out-Null
     Move-Item -LiteralPath $executable -Destination $cliPath
-    Confirm-GreentallyCli -Path $cliPath
+    Write-Output $cliPath
 }
 finally {
     if (Test-Path -LiteralPath $temporaryDir) {

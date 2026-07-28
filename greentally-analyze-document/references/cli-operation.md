@@ -10,8 +10,10 @@ the CLI is unavailable. The installer checks, in order:
 3. `greentally` on `PATH`;
 4. the latest `greentally-skill` GitHub Release.
 
-It does not update an existing CLI. It verifies a downloaded archive against `checksums.txt`,
-extracts only the executable, and runs `greentally version`.
+It does not update an existing CLI. The Skill Release records the independently versioned latest
+CLI in `cli-version.txt`. The installer selects that versioned archive, verifies it against
+`checksums.txt`, extracts only the executable, and requires `greentally version` to report the
+recorded CLI version.
 
 Capture the executable path printed by the installer and invoke that exact path for the task.
 Command examples use `greentally` as a readable placeholder; do not assume the cache directory was
