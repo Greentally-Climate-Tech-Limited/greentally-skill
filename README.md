@@ -68,9 +68,12 @@ install and use the CLI independently.
 
 ## Publishing the CLI
 
-1. Manually run `Release Greentally CLI` in the private `greentally-core-service` repository with
-   a bare SemVer version. It builds and publishes the six platform archives to that repository.
-2. Manually run `Sync Greentally CLI Release` in this repository. It reads the latest
+1. Publish the tagged GitHub Release in the private `greentally-core-service` repository using its
+   existing production release process. The same published-release event deploys production and
+   runs `Release Greentally CLI`, which builds the six platform archives from that exact tag and
+   attaches them to the existing Release.
+2. After `Release Greentally CLI` succeeds, manually run `Sync Greentally CLI Release` in this
+   repository. It reads the latest
    `greentally-core-service` Release, verifies every archive against `checksums.txt`, and publishes
    the same tag and assets here as the latest Release.
 
