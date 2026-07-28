@@ -1,0 +1,86 @@
+name: Sync Greentally CLI Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve latest core-service release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.CORE_SERVICE_RELEASE_READ_TOKEN }}
+          SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
+        run: |
+          tag=$(gh api "repos/$SOURCE_REPOSITORY/releases/latest" --jq '.tag_name')
+          if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "latest core-service release has an invalid tag: $tag" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse to overwrite an existing Skill release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $TAG already exists and will not be overwritten" >&2
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG already exists and will not be reused" >&2
+            exit 1
+          fi
+
+      - name: Download latest core-service release
+        env:
+          GH_TOKEN: ${{ secrets.CORE_SERVICE_RELEASE_READ_TOKEN }}
+          SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          mkdir -p release
+          gh release download "$TAG" --repo "$SOURCE_REPOSITORY" --dir release
+
+      - name: Verify release assets
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          expected=(
+            "greentally_${VERSION}_linux_amd64.tar.gz"
+            "greentally_${VERSION}_linux_arm64.tar.gz"
+            "greentally_${VERSION}_darwin_amd64.tar.gz"
+            "greentally_${VERSION}_darwin_arm64.tar.gz"
+            "greentally_${VERSION}_windows_amd64.zip"
+            "greentally_${VERSION}_windows_arm64.zip"
+            "checksums.txt"
+          )
+          for asset in "${expected[@]}"; do
+            test -f "release/$asset" || {
+              echo "missing release asset: $asset" >&2
+              exit 1
+            }
+          done
+          test "$(find release -maxdepth 1 -type f | wc -l)" -eq "${#expected[@]}" || {
+            echo "core-service release contains unexpected assets" >&2
+            exit 1
+          }
+          cd release
+          sha256sum --check checksums.txt
+
+      - name: Publish Skill latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          SOURCE_REPOSITORY: Greentally-Climate-Tech-Limited/greentally-core-service
+        run: |
+          gh release create "$TAG" release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes "Greentally CLI binaries synchronized from $SOURCE_REPOSITORY release $TAG." \
+            --latest

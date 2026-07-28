@@ -37,7 +37,8 @@ Complete these steps autonomously. Stop only when credentials or user authorizat
    `shared/`, `tools/`, or this README into a Skill directory.
 3. Run `scripts/install.sh` from any installed Skill on Linux or macOS, or
    `scripts/install.ps1` on Windows. The script uses an existing CLI when available; otherwise it
-   downloads the latest release for the current platform and verifies its SHA-256 checksum.
+   downloads the latest mirrored `greentally-skill` release for the current platform and verifies
+   its SHA-256 checksum.
 4. Run `greentally version` using the path printed by the installer.
 5. Run `greentally auth status`. If authentication is not configured, run
    `greentally auth configure` and ask the user to enter a Greentally API key beginning with `sk_`
@@ -64,3 +65,15 @@ Use the application's documented Skill directory. Do not assume a global install
 
 To install only one Skill, copy only its directory and run its bundled installer. Every Skill can
 install and use the CLI independently.
+
+## Publishing the CLI
+
+1. Manually run `Release Greentally CLI` in the private `greentally-core-service` repository with
+   a bare SemVer version. It builds and publishes the six platform archives to that repository.
+2. Manually run `Sync Greentally CLI Release` in this repository. It reads the latest
+   `greentally-core-service` Release, verifies every archive against `checksums.txt`, and publishes
+   the same tag and assets here as the latest Release.
+
+Configure `CORE_SERVICE_RELEASE_READ_TOKEN` as an Actions secret in this repository. Use a
+fine-grained token restricted to `greentally-core-service` with only `Contents: Read-only`.
+Publishing this repository's Release uses its own short-lived `GITHUB_TOKEN`.
