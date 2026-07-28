@@ -1,0 +1,4 @@
+interface:
+  display_name: "Greentally Process Document"
+  short_description: "Run the complete Greentally document flow"
+  default_prompt: "Use $greentally-process-document to analyze, match, review, and optionally submit this document."

@@ -1,88 +1,66 @@
 # Greentally Skills
 
-This repository contains agent skills for working with Greentally through MCP.
+## version
 
-## `match-greentally-factors`
+0.0.1
 
-This skill reproduces the Greentally Direct Upload review flow inside a user's own AI agent:
+Greentally Skills let a local AI agent analyze source documents, match organization-visible
+emission factors, review the result, and save or submit it through the `greentally` CLI. The
+local workflow is an enhancement to the Greentally Web workflow; Web analysis remains available
+and both workflows use the same validation and storage contracts.
 
-1. The local agent reads and recognizes the source.
-2. It extracts reviewable activity or spend rows.
-3. It queries the organization-visible Greentally factor catalog through MCP.
-4. It serializes the standard source-record JSON and matches factors.
-5. It validates the source-record submission and shows the exact result.
-6. It stops and waits for a new explicit user confirmation before any MCP submission.
-7. Only after confirmation, it submits the confirmed rows through MCP.
+| Skill | Use it for | Reads source | Writes analysis | Submits |
+| --- | --- | --- | --- | --- |
+| `greentally-analyze-document` | Recognize or reanalyze a document | Yes | No | No |
+| `greentally-match-factors` | Match or replace factors for existing analysis | No | No | No |
+| `greentally-submit-analysis` | Review, save, or submit analysis | Only when a required fact must be reanalyzed | On explicit save or submit | On explicit confirmation |
+| `greentally-process-document` | Run the complete workflow from source to optional submission | Yes | On explicit save or submit | On explicit confirmation |
 
-Original files remain local. The workflow is not limited to the formats accepted by the Greentally web uploader: it can process PDFs, images, spreadsheets, CSV, email, text, and other formats whenever the local agent can read them reliably.
+Each Skill is self-contained. Install all four by default, or install an individual directory
+when only one stage is needed.
 
 ## Install with an AI Agent
 
 Give your agent this instruction:
 
 ```text
-Fetch and follow the instructions from https://raw.githubusercontent.com/Greentally-Climate-Tech-Limited/greentally-skill/refs/heads/main/README.md to configure Greentally MCP and install the skill.
+Fetch and follow the instructions from https://raw.githubusercontent.com/Greentally-Climate-Tech-Limited/greentally-skill/refs/heads/main/README.md to install the Greentally CLI and Greentally skills.
 ```
 
 ## Instructions for the Installing Agent
 
 Complete these steps autonomously. Stop only when credentials or user authorization are required.
 
-1. Check whether a Streamable HTTP MCP server named `greentally` is already configured.
-2. If it is missing or unauthorized, ask the user for:
-   - the Greentally service URL;
-   - a Greentally API key beginning with `sk_`.
-3. Never guess, echo, log, commit, or store the key outside the agent application's protected MCP credential/configuration mechanism.
-4. Normalize a host-only service value to `https://<host>/mcp`. Preserve an explicit `http://` or `https://` scheme and append `/mcp` only when missing.
-5. Configure stateless Streamable HTTP with this header:
-
-   ```http
-   Authorization: Bearer <greentally-api-key>
-   ```
-
-6. Verify the connection by listing tools. Expect:
-   - `list_factor_categories`
-   - `list_factor_libraries`
-   - `list_factor_releases`
-   - `list_factor_entries`
-   - `get_factor_entry`
-   - `create_factor_entry`
-   - `update_factor_entry`
-   - `import_factor_entries_csv`
-   - `validate_emission_source_records`
-   - `submit_emission_source_records`
-7. Install or update the `match-greentally-factors` directory using the instructions below.
-8. Verify that `SKILL.md`, `agents/openai.yaml`, and all reference files, including `emission-source-contract-v1.schema.json`, are present.
-9. Report MCP connection and skill installation status. Mention that a restart or reload may be required before the skill appears.
-
-Never send an original source document to Greentally MCP. The installed skill keeps recognition and extraction in the local agent and sends only factor queries and finalized source-record JSON.
-
-Never submit emission data proactively. The agent must validate first, display the exact submission summary, and wait for a new explicit confirmation. The user's initial request to process or upload a source is not final submission confirmation.
+1. Clone `https://github.com/Greentally-Climate-Tech-Limited/greentally-skill.git` into a new
+   system temporary directory.
+2. Install all four Skill directories into the agent application's Skill directory. Do not copy
+   `shared/`, `tools/`, or this README into a Skill directory.
+3. Run `scripts/install.sh` from any installed Skill on Linux or macOS, or
+   `scripts/install.ps1` on Windows. The script uses an existing CLI when available; otherwise it
+   downloads the latest release for the current platform and verifies its SHA-256 checksum.
+4. Run `greentally version` using the path printed by the installer.
+5. Run `greentally auth status`. If authentication is not configured, run
+   `greentally auth configure` and ask the user to enter a Greentally API key beginning with `sk_`
+   directly into the command's hidden prompt. Never ask the user to send the key in chat.
+6. Never echo, log, commit, pass on a command line, or store the API key in a normal text file.
+   In headless or CI environments, instruct the user to set `GREENTALLY_API_KEY`.
+7. Report the installed Skill names, CLI version, and authentication status. Mention that the
+   agent application may need to reload before new Skills appear.
+8. Remove only the temporary clone created in step 1.
 
 ### Codex
 
-```bash
-git clone --depth 1 https://github.com/Greentally-Climate-Tech-Limited/greentally-skill.git /tmp/greentally-skill
-mkdir -p ~/.codex/skills ~/.agents/skills
-cp -R /tmp/greentally-skill/match-greentally-factors ~/.codex/skills/
-ln -sfn ~/.codex/skills/match-greentally-factors ~/.agents/skills/match-greentally-factors
-```
-
-For an update, fetch a fresh copy and replace the installed skill directory. Do not keep credentials inside the skill directory.
+Install the four directories under `${CODEX_HOME:-$HOME/.codex}/skills`. When compatibility with
+agents that discover `~/.agents/skills` is needed, create links from that directory to the four
+installed Skill directories.
 
 ### Claude Code
 
-```bash
-git clone --depth 1 https://github.com/Greentally-Climate-Tech-Limited/greentally-skill.git /tmp/greentally-skill
-mkdir -p ~/.claude/skills
-cp -R /tmp/greentally-skill/match-greentally-factors ~/.claude/skills/
-```
+Install the four directories under `~/.claude/skills`.
 
 ### Other Agent Applications
 
-1. Clone `https://github.com/Greentally-Climate-Tech-Limited/greentally-skill.git` to a temporary directory.
-2. Copy `match-greentally-factors` into the application's skill directory.
-3. Configure the Greentally MCP endpoint and Bearer header using the application's protected MCP configuration mechanism.
-4. Restart or reload the application if necessary.
+Use the application's documented Skill directory. Do not assume a global installation path.
 
-Invoke the installed skill as `$match-greentally-factors` or select it from the agent application's skill picker.
+To install only one Skill, copy only its directory and run its bundled installer. Every Skill can
+install and use the CLI independently.

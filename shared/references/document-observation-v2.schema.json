@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://greentally.ai/schemas/document-observation-v2.schema.json",
+  "title": "Greentally Document Observation v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "items", "warnings", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "document-observation/v2" },
+    "source": { "$ref": "#/$defs/source" },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "summary": { "type": "string" }
+  },
+  "$defs": {
+    "identifiers": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": { "accountNumber": { "type": "string" }, "meterNumber": { "type": "string" } }
+    },
+    "totals": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "netAmount": { "type": "number" }, "taxAmount": { "type": "number" }, "grossAmount": { "type": "number" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+      }
+    },
+    "sourceAdditionalInfo": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": { "identifiers": { "$ref": "#/$defs/identifiers" }, "totals": { "$ref": "#/$defs/totals" } }
+    },
+    "quantity": {
+      "type": "object", "additionalProperties": false, "required": ["value"],
+      "properties": { "value": { "type": "number" }, "unit": { "type": "string" } }
+    },
+    "money": {
+      "type": "object", "additionalProperties": false, "required": ["value", "currency"],
+      "properties": { "value": { "type": "number" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" } }
+    },
+    "itemAdditionalInfo": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "productCode": { "type": "string" }, "quantity": { "$ref": "#/$defs/quantity" },
+        "unitPrice": { "$ref": "#/$defs/money" }, "associatedCost": { "$ref": "#/$defs/money" }
+      }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["sourceId", "sourceName"],
+      "properties": {
+        "sourceId": { "type": "string" }, "sourceName": { "type": "string" },
+        "documentCategory": { "type": "string", "enum": ["utility_bill", "invoice", "travel_document", "waste_document", "statement", "data_table", "other"] },
+        "documentType": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+        "documentNumber": { "type": "string" }, "documentDate": { "type": "string" }, "supplier": { "type": "string" },
+        "regionCode": { "type": "string" }, "location": { "type": "string" },
+        "additionalInfo": { "$ref": "#/$defs/sourceAdditionalInfo" }
+      }
+    },
+    "activity": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": { "value": { "type": "number" }, "unit": { "type": "string" } }
+    },
+    "spend": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": { "value": { "type": "number" }, "currency": { "type": "string" } }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["field", "quote"],
+      "properties": { "field": { "type": "string" }, "quote": { "type": "string" }, "reference": { "type": "string" } }
+    },
+    "categoryCandidate": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "confidence", "reason"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "confidence": { "type": "string" }, "reason": { "type": "string" } }
+    },
+    "matchingHints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["activityName", "categoryCandidates", "fallbackRegionCodes", "factorKeywords"],
+      "properties": {
+        "activityName": { "type": "string" },
+        "categoryCandidates": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/categoryCandidate" } },
+        "fallbackRegionCodes": { "type": "array", "maxItems": 3, "items": { "type": "string" } },
+        "factorKeywords": { "type": "array", "maxItems": 8, "items": { "type": "string" } },
+        "releaseYear": { "type": "integer" }
+      }
+    },
+    "item": {
+      "type": "object", "additionalProperties": false, "required": ["itemId", "evidence", "remarks", "matchingHints"],
+      "properties": {
+        "itemId": { "type": "string" }, "isCarbon": { "type": "boolean", "default": true },
+        "name": { "type": "string" }, "description": { "type": "string" },
+        "activity": { "$ref": "#/$defs/activity" }, "spend": { "$ref": "#/$defs/spend" },
+        "regionCode": { "type": "string" }, "location": { "type": "string" },
+        "startDate": { "type": "string" }, "endDate": { "type": "string" },
+        "additionalInfo": { "$ref": "#/$defs/itemAdditionalInfo" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "remarks": { "type": "array", "items": { "type": "string" } },
+        "matchingHints": { "$ref": "#/$defs/matchingHints" }
+      }
+    }
+  }
+}

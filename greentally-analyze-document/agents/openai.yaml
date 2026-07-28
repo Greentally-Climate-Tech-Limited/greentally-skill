@@ -1,0 +1,4 @@
+interface:
+  display_name: "Greentally Analyze Document"
+  short_description: "Analyze source documents for Greentally"
+  default_prompt: "Use $greentally-analyze-document to analyze this document into a structured local Greentally analysis."

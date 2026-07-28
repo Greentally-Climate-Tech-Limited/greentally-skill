@@ -1,0 +1,4 @@
+interface:
+  display_name: "Greentally Submit Analysis"
+  short_description: "Review, save, or submit Greentally analysis"
+  default_prompt: "Use $greentally-submit-analysis to review this Greentally analysis and ask whether to save, submit, or discard it."

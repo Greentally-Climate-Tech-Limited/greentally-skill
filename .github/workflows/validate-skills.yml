@@ -1,0 +1,35 @@
+name: Validate skills
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check shared resource copies
+        run: python3 tools/sync-shared.py --check
+
+      - name: Check shell installers
+        run: |
+          for script in greentally-*/scripts/install.sh; do
+            sh -n "$script"
+          done
+
+      - name: Check JSON schemas
+        run: |
+          for schema in shared/references/*.schema.json; do
+            python3 -m json.tool "$schema" >/dev/null
+          done

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Greentally Match Factors"
+  short_description: "Match Greentally factors to analyzed items"
+  default_prompt: "Use $greentally-match-factors to match compatible Greentally factors to these analyzed items."

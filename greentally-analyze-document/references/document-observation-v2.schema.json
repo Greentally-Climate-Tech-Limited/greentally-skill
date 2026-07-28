@@ -84,7 +84,8 @@
     "item": {
       "type": "object", "additionalProperties": false, "required": ["itemId", "evidence", "remarks", "matchingHints"],
       "properties": {
-        "itemId": { "type": "string" }, "name": { "type": "string" }, "description": { "type": "string" },
+        "itemId": { "type": "string" }, "isCarbon": { "type": "boolean", "default": true },
+        "name": { "type": "string" }, "description": { "type": "string" },
         "activity": { "$ref": "#/$defs/activity" }, "spend": { "$ref": "#/$defs/spend" },
         "regionCode": { "type": "string" }, "location": { "type": "string" },
         "startDate": { "type": "string" }, "endDate": { "type": "string" },

@@ -71,6 +71,7 @@
       "required": ["itemId", "name", "input", "startDate", "endDate"],
       "properties": {
         "itemId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "isCarbon": { "type": "boolean", "default": true },
         "name": { "type": "string", "minLength": 1, "pattern": "\\S" }, "description": { "type": "string" },
         "input": { "$ref": "#/$defs/input" }, "regionCode": { "type": "string", "pattern": "^(?:[A-Z]{3}|GLOBAL)$" },
         "location": { "type": "string" }, "startDate": { "type": "string", "format": "date" },
