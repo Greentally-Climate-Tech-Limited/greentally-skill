@@ -8,6 +8,7 @@ returned by `analysis get`. Preserve:
 - carbon review items and their candidates and selected factor;
 - every carbon and non-carbon item in `allItems`;
 - `filterOptions`, diagnostics, warnings, summary, and message;
+- any server-returned `confirmationMessage`;
 - status `completed` or `needs_input`;
 - `sourceFileSha256` returned by `analysis build` and carried through `analysis prepare`, or
   returned authoritatively by `analysis get`.
@@ -35,8 +36,8 @@ Build the upsert input as a dedicated writable snapshot:
 }
 ```
 
-Never copy `uploadId`, `sessionId`, `submitted`, `submittedAt`, `versionId`, or `provenance` from an
-`analysis get` response into this write input.
+Never copy `uploadId`, `sessionId`, `submitted`, `submittedAt`, `versionId`, `provenance`, or
+`confirmationMessage` from an `analysis get` response into this write input.
 
 Upsert accepts only `completed` or `needs_input`, rejects unknown fields and duplicate
 `sourceId/itemId`, replaces the complete analysis snapshot, and creates a new UUID v4 `versionId`.
@@ -75,25 +76,20 @@ Do not infer this choice from the initial task, prior approval of analysis, sile
 
 - **Discard:** perform no write.
 - **Save temporarily:** call `analysis upsert` once and return the new `versionId`.
-- **Submit:** call `analysis upsert` first, then submit the exact returned analysis with its new
-  `versionId` and `--y`.
+- **Submit:** call `analysis upsert` first. When its response has no `confirmationMessage`, submit
+  the returned `versionId` with `--y`. When it has a `confirmationMessage`, follow the additional
+  confirmation gate below.
 
-Build submit input from the successful upsert response, never from the older local review:
+Submit references the successful upsert version directly:
 
-```json
-{
-  "schemaVersion": "emission-source-submission/v2",
-  "analysisVersionId": "versionId-returned-by-upsert",
-  "items": [
-    {
-      "sourceRecord": {},
-      "factorId": "selected-factor-id"
-    }
-  ]
-}
+```text
+greentally submit --document-id <id> \
+  --analysis-version-id <versionId-returned-by-upsert> \
+  --y
 ```
 
-Use each complete returned `sourceRecord`; the abbreviated object above is illustrative only.
+Do not build or send submission items. The server reads the exact saved source records and selected
+factors for `analysisVersionId`.
 
 Any change to business facts, factor selection, or review JSON invalidates the displayed review.
 Rebuild or prepare as appropriate, display the revised review, and ask again.
@@ -104,9 +100,6 @@ The server generates a UUID v4 `versionId` on every Web analyze, Web save, and C
 uses `analysisVersionId` and locks the current analysis. On `ANALYSIS_CHANGED`, fetch the latest
 analysis, show the changes, and require a new review decision.
 
-The server also compares the submitted `sourceRecord + factorId` against the latest stored
-analysis. Never modify submission rows after upsert.
-
 The CLI computes source SHA-256 during build. Preparation and review carry that exact value, and
 upsert compares it with the upload record. On `SOURCE_FILE_MISMATCH`, stop and obtain the source
 bound to the Document ID. Never override the error.
@@ -115,6 +108,12 @@ bound to the Document ID. Never override the error.
 
 Use `greentally submit ... --y` only after the post-review choice. Without `--y`, the CLI returns
 `CONFIRMATION_REQUIRED` locally and makes no API request. Never bypass this gate.
+
+When the successful upsert response contains a non-empty `confirmationMessage`, display that exact
+message and ask one separate confirmation question. Do not submit yet. If the user confirms,
+submit the same returned `versionId` with both `--y` and `--confirm`. If the user declines, stop
+without submitting. Never infer this additional confirmation from the original submit choice or
+pass `--confirm` preemptively.
 
 Report only the server's insertion, duplicate, calculation, or failure result as final. A local
 preview is not proof of submission.

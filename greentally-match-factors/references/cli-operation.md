@@ -65,10 +65,12 @@ greentally analysis build --document-id ID --source-file PATH --input <file|->
 greentally analysis prepare --document-id ID --input <file|->
 greentally analysis get --document-id ID
 greentally analysis upsert --document-id ID --input <file|->
-greentally submit --document-id ID --input <file|-> --y
+greentally submit --document-id ID --analysis-version-id UUID --y [--confirm]
 ```
 
-Structured JSON commands accept `--input <file>` or `--input -`; they do not accept inline JSON.
+Analysis commands with structured JSON accept `--input <file>` or `--input -`; they do not accept
+inline JSON. Submit reads the authoritative saved analysis by version and does not accept
+`--input`.
 
 Do not use Factor writes, document list/delete, AI/OCR, stream/history, emission management, draft
 management, or direct REST calls.
@@ -114,7 +116,7 @@ Never suppress `SOURCE_FILE_MISMATCH`, `ANALYSIS_CHANGED`, `CONFIRMATION_REQUIRE
 ## Temporary workspace
 
 Create a randomly named directory under the operating system temporary directory for each task.
-Keep downloaded source, observation, analysis, preparation, review, and submission artifacts there.
+Keep downloaded source, observation, analysis, preparation, and review artifacts there.
 This is task-scoped transfer storage, not a recovery cache.
 
 Delete only the directory created by the Skill when the task completes, is discarded, or cannot

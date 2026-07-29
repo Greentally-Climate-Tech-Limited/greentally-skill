@@ -1,6 +1,6 @@
 ---
 name: greentally-submit-analysis
-description: Review a prepared Greentally direct-upload analysis or an existing Document ID, then explicitly offer to save, submit, or discard it. Use when the user asks to review, temporarily save, upsert, finalize, or submit analysis; enforce the final review gate, source-file binding, analysis version, upsert-before-submit, and greentally submit --y confirmation without redoing factor matching unless the review is stale or incomplete.
+description: Review a prepared Greentally direct-upload analysis or an existing Document ID, then explicitly offer to save, submit, or discard it. Use when the user asks to review, temporarily save, upsert, finalize, or submit analysis; enforce the final review gate, source-file binding, analysis version, upsert-before-submit, greentally submit --y, and conditional --confirm without redoing factor matching unless the review is stale or incomplete.
 ---
 
 # Greentally Submit Analysis
@@ -34,14 +34,17 @@ makes that choice.
 6. On temporary save, strip server-owned fields, write the dedicated upsert snapshot, run
    `greentally analysis upsert --document-id <id> --input <upsert.json>`, report the returned
    `versionId`, and stop.
-7. On submit, first run the same upsert. Build the submission from the analysis and new `versionId`
-   returned by that upsert, never from an older local review, then run:
+7. On submit, first run the same upsert. When the response has no `confirmationMessage`, submit the
+   new `versionId`, never an older local version:
 
    ```text
-   greentally submit --document-id <id> --input <submission.json> --y
+   greentally submit --document-id <id> --analysis-version-id <versionId> --y
    ```
 
-8. Report the server result, not a local prediction. Remove the task directory.
+8. When upsert returns a non-empty `confirmationMessage`, display it and ask one separate
+   confirmation question. Submit the same version with `--y --confirm` only if the user confirms.
+   Otherwise stop without submitting.
+9. Report the server result, not a local prediction. Remove the task directory.
 
 If any reviewed content changes, show the revised review and ask again. On `ANALYSIS_CHANGED`,
 fetch the latest analysis, display what changed, and require a new review decision. Never bypass

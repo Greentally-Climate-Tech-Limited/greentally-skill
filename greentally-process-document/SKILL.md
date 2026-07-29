@@ -50,11 +50,14 @@ installed.
    save or discard.
 9. On save, strip server-owned fields, upsert the writable review snapshot, and report its new
    `versionId`.
-10. On submit, upsert first, then construct submission from the analysis and new `versionId`
-    returned by that upsert. Submit that exact result using `greentally submit ... --y`; never
-    reuse an older local version.
-11. On discard, perform no write.
-12. Report authoritative CLI results and remove the task directory in every terminal path. Never
+10. On submit, upsert first. When the response has no `confirmationMessage`, submit its new
+    `versionId` with
+    `greentally submit --document-id <id> --analysis-version-id <versionId> --y`. Never reuse an
+    older local version or construct submission items.
+11. When upsert returns a non-empty `confirmationMessage`, display it and ask one separate
+    confirmation question before submitting. Add `--confirm` only after the user confirms.
+12. On discard, perform no write.
+13. Report authoritative CLI results and remove the task directory in every terminal path. Never
     delete a user-provided source.
 
 Do not auto-save, create a local recovery cache, upload outside the standard document flow, use
