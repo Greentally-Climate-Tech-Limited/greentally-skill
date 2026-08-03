@@ -28,9 +28,14 @@ Use these cache locations:
 ## Authentication
 
 Use the existing `sk_` API key flow. Resolve credentials from `GREENTALLY_API_KEY`, then from the
-operating system credential store. Never request a `--api-key` flag, put a key in JSON input, or
-write it to a normal configuration file. Use hidden input through `greentally auth configure`.
-Never ask the user to send an API key in chat.
+operating system credential store, then from the CLI's private local credential file. When the
+operating system store is unavailable, `greentally auth configure` automatically uses that local
+fallback with a private configuration directory, a `0600` credential file on Unix-like systems,
+and the user configuration directory's ACL on Windows. The key is never written to `config.json`.
+
+Never request a `--api-key` flag, put a key in JSON input, or write it to another configuration or
+task file. Use hidden input through `greentally auth configure`. Never ask the user to send an API
+key in chat.
 The default service URL is `https://api.greentally.ai`. Use `GREENTALLY_API_URL` or ordinary
 non-secret CLI configuration for a non-default service URL.
 

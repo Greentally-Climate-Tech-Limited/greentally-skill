@@ -44,7 +44,8 @@ Complete these steps autonomously. Stop only when credentials or user authorizat
    `greentally auth configure` and ask the user to enter a Greentally API key beginning with `sk_`
    directly into the command's hidden prompt. Never ask the user to send the key in chat.
 6. Never echo, log, commit, pass on a command line, or store the API key in a normal text file.
-   In headless or CI environments, instruct the user to set `GREENTALLY_API_KEY`.
+   When the operating system credential store is unavailable, the CLI automatically uses its
+   private local credential file. In ephemeral CI environments, prefer `GREENTALLY_API_KEY`.
 7. Report the installed Skill names, CLI version, and authentication status. Mention that the
    agent application may need to reload before new Skills appear.
 8. Remove only the temporary clone created in step 1.

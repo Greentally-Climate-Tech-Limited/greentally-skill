@@ -39,6 +39,45 @@ Build the upsert input as a dedicated writable snapshot:
 Never copy `uploadId`, `sessionId`, `submitted`, `submittedAt`, `versionId`, `provenance`, or
 `confirmationMessage` from an `analysis get` response into this write input.
 
+For every entry in `items`, preserve these writable fields exactly:
+
+```json
+{
+  "itemId": "source item id",
+  "itemIndex": 0,
+  "status": "completed",
+  "selectedFactorId": "factor id",
+  "selectedFactor": {},
+  "emissionPreview": { "value": 0, "unit": "kgCO2e" },
+  "sourceRecord": {},
+  "matchingHints": {},
+  "candidates": [],
+  "message": ""
+}
+```
+
+Only remove item-level `submitted` and `submittedAt`. Do not reconstruct an item from the Markdown
+review or from selected factor fields alone: `sourceRecord`, `matchingHints`, and `candidates` must
+remain present, and a completed item must preserve its selected factor id, selected factor,
+emission preview, and the candidate containing that selected factor.
+
+Given the unmodified stdout envelope from `analysis get`, the writable root can be selected with:
+
+```jq
+.data | {
+  schemaVersion,
+  status,
+  sourceFileSha256,
+  items: (.items | map(del(.submitted, .submittedAt))),
+  allItems,
+  filterOptions,
+  diagnostics,
+  warnings,
+  summary,
+  message
+}
+```
+
 Upsert accepts only `completed` or `needs_input`, rejects unknown fields and duplicate
 `sourceId/itemId`, replaces the complete analysis snapshot, and creates a new UUID v4 `versionId`.
 It also replaces persisted non-carbon items and authoritatively recalculates item
